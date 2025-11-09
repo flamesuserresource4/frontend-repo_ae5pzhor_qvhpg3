@@ -23,7 +23,7 @@ export default function HeroCover() {
     <section className="relative w-full h-[60vh] min-h-[420px] overflow-hidden bg-gradient-to-b from-[#0b0c14] via-[#0b0c14] to-transparent">
       <div className="absolute inset-0">
         <Spline
-          scene="https://prod.spline.design/wwTRdG1D9CkNs368/scene.splinecode"
+          scene="https://prod.spline.design/EF7JOSsHLk16Tlw9/scene.splinecode"
           style={{ width: '100%', height: '100%' }}
         />
       </div>

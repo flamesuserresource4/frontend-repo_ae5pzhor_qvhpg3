@@ -1,7 +1,6 @@
 import React from 'react';
 import HeroCover from './components/HeroCover';
 import InteractiveDashboard from './components/InteractiveDashboard';
-import DomainSegmentation from './components/DomainSegmentation';
 import IdeaForm from './components/IdeaForm';
 import IdeaList from './components/IdeaList';
 
@@ -73,18 +72,34 @@ export default function App() {
         </div>
 
         <div className="lg:col-span-1">
-          <DomainSegmentation ideas={ideas} selectedDomain={selectedDomain} onSelect={setSelectedDomain} />
-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-white/80 text-sm">
-            <p>
-              Major domains we support:
-            </p>
-            <ul className="mt-2 list-disc list-inside space-y-1 text-white/80">
-              <li>AI/ML</li>
-              <li>Web Apps</li>
-              <li>Mobile</li>
-              <li>Fintech</li>
-              <li>HealthTech</li>
-            </ul>
+          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-white/80 text-sm">
+            <p className="text-white/90 font-medium">Domains</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {['AI/ML','Web Apps','Mobile','Fintech','HealthTech'].map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setSelectedDomain((prev) => (prev === d ? 'All' : d))}
+                  className={`rounded-full border px-3 py-1 text-xs transition ${
+                    selectedDomain === d
+                      ? 'border-indigo-500 bg-indigo-600 text-white'
+                      : 'border-white/10 bg-white/5 text-white/90 hover:bg-white/10'
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
+              <button
+                onClick={() => setSelectedDomain('All')}
+                className={`rounded-full border px-3 py-1 text-xs transition ${
+                  selectedDomain === 'All'
+                    ? 'border-indigo-500 bg-indigo-600 text-white'
+                    : 'border-white/10 bg-white/5 text-white/90 hover:bg-white/10'
+                }`}
+              >
+                All
+              </button>
+            </div>
+            <p className="mt-3 text-xs">Tip: Use dashboard cards or these chips to filter.</p>
           </div>
         </div>
       </main>
