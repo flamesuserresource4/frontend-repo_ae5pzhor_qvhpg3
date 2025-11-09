@@ -1,12 +1,14 @@
 import React from 'react';
+import DomainTag from './DomainTag';
 
 const STAGES = ['Ideated', 'Prototyped', 'In Progress', 'Deployed'];
 
-export default function IdeaForm({ onAdd }) {
+export default function IdeaForm({ onAdd, existingDomains = [] }) {
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [stage, setStage] = React.useState(STAGES[0]);
   const [deadline, setDeadline] = React.useState('');
+  const [domain, setDomain] = React.useState('');
   const [checkItem, setCheckItem] = React.useState('');
   const [checklist, setChecklist] = React.useState([]);
 
@@ -31,6 +33,7 @@ export default function IdeaForm({ onAdd }) {
       progress: 0,
       checklist,
       createdAt: new Date().toISOString(),
+      domain: domain.trim() || 'Uncategorized',
     };
     onAdd(idea);
     setTitle('');
@@ -38,6 +41,7 @@ export default function IdeaForm({ onAdd }) {
     setStage(STAGES[0]);
     setDeadline('');
     setChecklist([]);
+    setDomain('');
   };
 
   return (
@@ -67,6 +71,19 @@ export default function IdeaForm({ onAdd }) {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+        <div>
+          <label className="block text-sm font-medium mb-1">Deadline</label>
+          <input
+            type="date"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
+            className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white/70 dark:bg-neutral-900/60 px-3 py-2"
+          />
+        </div>
+        <DomainTag value={domain} onChange={setDomain} options={existingDomains} />
+      </div>
+
       <div>
         <label className="block text-sm font-medium mb-1">Description</label>
         <textarea
@@ -79,15 +96,6 @@ export default function IdeaForm({ onAdd }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-        <div>
-          <label className="block text-sm font-medium mb-1">Deadline</label>
-          <input
-            type="date"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-            className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white/70 dark:bg-neutral-900/60 px-3 py-2"
-          />
-        </div>
         <div>
           <label className="block text-sm font-medium mb-1">Checklist</label>
           <div className="flex gap-2">

@@ -4,6 +4,7 @@ import IdeaForm from './components/IdeaForm';
 import IdeaList from './components/IdeaList';
 import Analytics from './components/Analytics';
 import RepoHelper from './components/RepoHelper';
+import DomainSegmentation from './components/DomainSegmentation';
 
 function App() {
   const [ideas, setIdeas] = React.useState(() => {
@@ -14,6 +15,7 @@ function App() {
       return [];
     }
   });
+  const [selectedDomain, setSelectedDomain] = React.useState('All');
 
   React.useEffect(() => {
     localStorage.setItem('ideas', JSON.stringify(ideas));
@@ -59,6 +61,20 @@ function App() {
     setIdeas(data);
   };
 
+  const domains = React.useMemo(() => {
+    const set = new Set(
+      ideas
+        .map((i) => (i.domain ? String(i.domain).trim() : ''))
+        .filter((d) => d && d.length > 0)
+    );
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [ideas]);
+
+  const filteredIdeas = React.useMemo(() => {
+    if (selectedDomain === 'All') return ideas;
+    return ideas.filter((i) => (i.domain?.trim() || 'Uncategorized') === selectedDomain);
+  }, [ideas, selectedDomain]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-sky-50 to-emerald-50 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-950 text-neutral-900 dark:text-neutral-100">
       <Header onExport={handleExport} onImport={handleImport} />
@@ -67,13 +83,18 @@ function App() {
         <section className="lg:col-span-2 space-y-6">
           <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 p-5">
             <h2 className="text-xl font-semibold mb-4">Add a new idea</h2>
-            <IdeaForm onAdd={addIdea} />
+            <IdeaForm onAdd={addIdea} existingDomains={domains} />
           </div>
 
           <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 p-5">
-            <h2 className="text-xl font-semibold mb-4">Your ideas</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Your ideas</h2>
+              {selectedDomain !== 'All' && (
+                <span className="text-sm text-neutral-500">Showing domain: {selectedDomain}</span>
+              )}
+            </div>
             <IdeaList
-              ideas={ideas}
+              ideas={filteredIdeas}
               onToggleChecklist={toggleChecklist}
               onProgressChange={updateProgress}
               onDelete={deleteIdea}
@@ -83,8 +104,9 @@ function App() {
         </section>
 
         <aside className="space-y-6">
+          <DomainSegmentation ideas={ideas} selected={selectedDomain} onSelect={setSelectedDomain} />
           <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 p-5">
-            <Analytics ideas={ideas} />
+            <Analytics ideas={filteredIdeas} />
           </div>
           <RepoHelper />
         </aside>
