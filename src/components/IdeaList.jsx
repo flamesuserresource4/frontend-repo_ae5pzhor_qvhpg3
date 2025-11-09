@@ -1,73 +1,58 @@
 import React from 'react';
-import { Calendar, CheckCircle2, Circle, Trash2, Edit2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle2, Trash2 } from 'lucide-react';
 
-export default function IdeaList({ ideas, onToggleChecklist, onProgressChange, onDelete, onEdit }) {
-  const formatDate = (d) => (d ? new Date(d).toLocaleDateString() : 'No deadline');
-
+export default function IdeaList({ ideas = [], onRemove, selectedDomain }) {
   return (
-    <div className="space-y-3">
-      {ideas.length === 0 && (
-        <div className="text-sm text-neutral-500 text-center py-6">No ideas yet. Add your first one above.</div>
-      )}
-      {ideas.map((idea) => {
-        const total = idea.checklist.length || 1;
-        const done = idea.checklist.filter((c) => c.done).length;
-        const percent = Math.round((done / total) * 100);
-        return (
-          <div key={idea.id} className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div className="rounded-2xl border bg-white p-4 md:p-6 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-900">Ideas {selectedDomain ? `· ${selectedDomain}` : ''}</h3>
+        <span className="text-xs text-gray-500">{ideas.length} items</span>
+      </div>
+      <div className="mt-4">
+        <AnimatePresence initial={false}>
+          {ideas.map((idea) => (
+            <motion.div
+              key={idea.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="group flex items-start justify-between rounded-xl border p-3 mb-3 bg-white hover:shadow-sm"
+            >
               <div>
-                <h3 className="font-semibold text-lg">{idea.title}</h3>
-                <p className="text-sm text-neutral-500 mt-1">{idea.description || 'No description'}</p>
-                <div className="flex items-center gap-3 text-xs text-neutral-500 mt-2">
-                  <span className="px-2 py-1 rounded-full border border-neutral-200 dark:border-neutral-800">{idea.stage}</span>
-                  <span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(idea.deadline)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 text-rose-600 px-2 py-0.5 text-xs border border-rose-100">
+                    {idea.domain || 'Uncategorized'}
+                  </span>
+                  <span className="text-xs text-gray-400">{idea.stage}</span>
+                </div>
+                <h4 className="mt-1 font-medium text-gray-900">{idea.title}</h4>
+                {idea.description && (
+                  <p className="mt-1 text-sm text-gray-600">{idea.description}</p>
+                )}
+                <div className="mt-2 h-1.5 w-full bg-gray-100 rounded-full">
+                  <div
+                    className="h-1.5 rounded-full bg-rose-500"
+                    style={{ width: `${idea.progress || 0}%` }}
+                  />
                 </div>
               </div>
-              <div className="w-full md:w-64">
-                <div className="h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-indigo-600" style={{ width: `${percent}%` }} />
-                </div>
-                <div className="text-right text-xs text-neutral-500 mt-1">{percent}%</div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="hidden group-hover:inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                  onClick={() => onRemove?.(idea.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  remove
+                </button>
               </div>
-            </div>
-
-            {idea.checklist.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {idea.checklist.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => onToggleChecklist(idea.id, item.id)}
-                    className="w-full flex items-center gap-2 text-left px-3 py-2 rounded-md border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-                  >
-                    {item.done ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    ) : (
-                      <Circle className="w-4 h-4 text-neutral-400" />
-                    )}
-                    <span className={item.done ? 'line-through text-neutral-400' : ''}>{item.text}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="mt-3 flex items-center gap-2">
-              <button
-                onClick={() => onEdit(idea)}
-                className="px-3 py-1.5 text-sm rounded-md border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 inline-flex items-center gap-2"
-              >
-                <Edit2 className="w-4 h-4" /> Edit
-              </button>
-              <button
-                onClick={() => onDelete(idea.id)}
-                className="px-3 py-1.5 text-sm rounded-md border border-red-200 text-red-600 hover:bg-red-50 inline-flex items-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" /> Delete
-              </button>
-            </div>
-          </div>
-        );
-      })}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        {ideas.length === 0 && (
+          <div className="text-sm text-gray-500">No ideas yet. Add your first one on the left.</div>
+        )}
+      </div>
     </div>
   );
 }
