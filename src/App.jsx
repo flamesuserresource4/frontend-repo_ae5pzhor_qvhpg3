@@ -1,14 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React from 'react';
 import HeroCover from './components/HeroCover';
 import InteractiveDashboard from './components/InteractiveDashboard';
+import DomainSegmentation from './components/DomainSegmentation';
 import IdeaForm from './components/IdeaForm';
 import IdeaList from './components/IdeaList';
-import DomainSegmentation from './components/DomainSegmentation';
+
+const STAGES = ['Ideated', 'Prototyped', 'In Progress', 'Deployed'];
 
 const STORAGE_KEY = 'ideas';
 
-export default function App() {
-  const [ideas, setIdeas] = useState(() => {
+function useIdeas() {
+  const [ideas, setIdeas] = React.useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       return raw ? JSON.parse(raw) : [];
@@ -16,69 +18,80 @@ export default function App() {
       return [];
     }
   });
-  const [selectedDomain, setSelectedDomain] = useState('');
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(ideas));
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(ideas));
+    } catch {}
   }, [ideas]);
 
-  const existingDomains = useMemo(() => {
-    const s = new Set();
-    ideas.forEach((i) => {
-      if (i.domain && i.domain.trim()) s.add(i.domain.trim());
+  const addIdea = (idea) => setIdeas((arr) => [idea, ...arr]);
+  const removeIdea = (id) => setIdeas((arr) => arr.filter((i) => i.id !== id));
+  const toggleMilestone = (ideaId, index) =>
+    setIdeas((arr) =>
+      arr.map((i) => {
+        if (i.id !== ideaId) return i;
+        const checklist = (i.checklist || []).map((m, idx) => (idx === index ? { ...m, done: !m.done } : m));
+        const doneCount = checklist.filter((m) => m.done).length;
+        const autoProgress = checklist.length ? Math.round((doneCount / checklist.length) * 100) : i.progress || 0;
+        return { ...i, checklist, progress: autoProgress };
+      })
+    );
+
+  return { ideas, addIdea, removeIdea, toggleMilestone };
+}
+
+export default function App() {
+  const { ideas, addIdea, removeIdea, toggleMilestone } = useIdeas();
+  const [selectedDomain, setSelectedDomain] = React.useState('All');
+  const [selectedStage, setSelectedStage] = React.useState('');
+
+  const filtered = React.useMemo(() => {
+    return ideas.filter((i) => {
+      const domainOK = selectedDomain === 'All' || i.domain === selectedDomain;
+      const stageOK = !selectedStage || i.stage === selectedStage;
+      return domainOK && stageOK;
     });
-    return Array.from(s);
-  }, [ideas]);
-
-  const filteredIdeas = useMemo(() => {
-    if (!selectedDomain) return ideas;
-    return ideas.filter((i) => (i.domain || 'Uncategorized') === selectedDomain);
-  }, [ideas, selectedDomain]);
-
-  const handleAdd = (idea) => setIdeas((prev) => [idea, ...prev]);
-  const handleRemove = (id) => setIdeas((prev) => prev.filter((i) => i.id !== id));
+  }, [ideas, selectedDomain, selectedStage]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-rose-50/40">
-      <div className="mx-auto max-w-7xl px-4 md:px-6 py-6 md:py-8">
-        <HeroCover />
+    <div className="min-h-screen bg-[#0b0c14] text-white">
+      <HeroCover />
 
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3 space-y-6">
-            <InteractiveDashboard ideas={filteredIdeas} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <IdeaForm onAdd={handleAdd} existingDomains={existingDomains} />
-              <IdeaList ideas={filteredIdeas} onRemove={handleRemove} selectedDomain={selectedDomain} />
-            </div>
+      <main className="mx-auto max-w-7xl px-6 py-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3 space-y-6">
+          <InteractiveDashboard
+            ideas={ideas}
+            onFilterByStage={(s) => setSelectedStage((prev) => (prev === s ? '' : s))}
+            onFilterByDomain={(d) => setSelectedDomain((prev) => (prev === d ? 'All' : d))}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <IdeaForm onAdd={addIdea} />
+            <IdeaList ideas={filtered} onRemove={removeIdea} onToggleMilestone={toggleMilestone} />
           </div>
-          <aside className="lg:col-span-1 space-y-6">
-            <div className="rounded-2xl border bg-white p-4 md:p-6 shadow-sm">
-              <DomainSegmentation
-                ideas={ideas}
-                selectedDomain={selectedDomain}
-                onSelect={setSelectedDomain}
-              />
-              {selectedDomain && (
-                <button
-                  onClick={() => setSelectedDomain('')}
-                  className="mt-4 text-xs text-rose-600 hover:underline"
-                >
-                  Clear filter
-                </button>
-              )}
-            </div>
-
-            <div className="rounded-2xl border bg-white p-6">
-              <h3 className="text-sm font-semibold text-gray-900">Tips</h3>
-              <ul className="mt-3 list-disc pl-5 text-sm text-gray-600 space-y-1">
-                <li>Click the cover to interact with the cubes.</li>
-                <li>Use Domains to filter your workspace.</li>
-                <li>Adjust progress to visualize momentum.</li>
-              </ul>
-            </div>
-          </aside>
         </div>
-      </div>
+
+        <div className="lg:col-span-1">
+          <DomainSegmentation ideas={ideas} selectedDomain={selectedDomain} onSelect={setSelectedDomain} />
+          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-white/80 text-sm">
+            <p>
+              Major domains we support:
+            </p>
+            <ul className="mt-2 list-disc list-inside space-y-1 text-white/80">
+              <li>AI/ML</li>
+              <li>Web Apps</li>
+              <li>Mobile</li>
+              <li>Fintech</li>
+              <li>HealthTech</li>
+            </ul>
+          </div>
+        </div>
+      </main>
+
+      <footer className="mx-auto max-w-7xl px-6 pb-8 text-xs text-white/50">
+        Built with a dark, futuristic palette and smooth motion. Click stages/domains in the dashboard to filter.
+      </footer>
     </div>
   );
 }

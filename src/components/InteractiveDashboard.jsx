@@ -1,112 +1,102 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { BarChart2, PieChart, Activity } from 'lucide-react';
+import { Rocket, TrendingUp, Calendar } from 'lucide-react';
 
-export default function InteractiveDashboard({ ideas = [] }) {
-  const stats = useMemo(() => {
-    const byStage = ideas.reduce((acc, i) => {
-      acc[i.stage || 'Ideated'] = (acc[i.stage || 'Ideated'] || 0) + 1;
-      return acc;
-    }, {});
-    const byDomain = ideas.reduce((acc, i) => {
-      const d = i.domain && i.domain.trim() ? i.domain : 'Uncategorized';
-      acc[d] = (acc[d] || 0) + 1;
-      return acc;
-    }, {});
-    const avgProgress = ideas.length
-      ? Math.round(
-          ideas.reduce((sum, i) => sum + (Number(i.progress) || 0), 0) / ideas.length
-        )
-      : 0;
-    return { byStage, byDomain, avgProgress };
+const STAGES = ['Ideated', 'Prototyped', 'In Progress', 'Deployed'];
+
+export default function InteractiveDashboard({ ideas, onFilterByStage, onFilterByDomain }) {
+  const avg = React.useMemo(() => {
+    if (ideas.length === 0) return 0;
+    return Math.round(ideas.reduce((a, b) => a + (Number(b.progress) || 0), 0) / ideas.length);
   }, [ideas]);
 
-  const stages = ['Ideated', 'Prototyped', 'In Progress', 'Deployed'];
+  const byStage = React.useMemo(() => {
+    const map = Object.fromEntries(STAGES.map((s) => [s, 0]));
+    for (const i of ideas) if (map[i.stage] !== undefined) map[i.stage] += 1;
+    return map;
+  }, [ideas]);
+
+  const byDomain = React.useMemo(() => {
+    const map = {};
+    for (const i of ideas) {
+      const d = i.domain || 'Other';
+      map[d] = (map[d] || 0) + 1;
+    }
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [ideas]);
 
   return (
-    <section className="w-full grid grid-cols-1 lg:grid-cols-3 gap-4">
-      {/* Avg Progress */}
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <motion.div
-        whileHover={{ scale: 1.01 }}
-        className="col-span-1 flex flex-col justify-between rounded-2xl border bg-white p-6 shadow-sm"
+        initial={{ opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.5 }}
+        className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-white"
       >
-        <div className="flex items-center gap-2 text-gray-900">
-          <Activity className="h-5 w-5 text-rose-500" />
-          <h3 className="font-semibold">Average Progress</h3>
+        <div className="flex items-center gap-2 text-indigo-300">
+          <Rocket size={18} />
+          <span className="text-xs uppercase tracking-wider">Average Progress</span>
         </div>
-        <div className="mt-6">
-          <div className="h-3 w-full rounded-full bg-gray-100">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${stats.avgProgress}%` }}
-              transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-              className="h-3 rounded-full bg-rose-500"
-            />
+        <div className="mt-3 flex items-end gap-3">
+          <div className="text-4xl font-bold">{avg}%</div>
+          <div className="h-2 flex-1 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-500" style={{ width: `${avg}%` }} />
           </div>
-          <p className="mt-2 text-sm text-gray-600">{stats.avgProgress}% overall</p>
         </div>
       </motion.div>
 
-      {/* Stage Bars */}
       <motion.div
-        whileHover={{ scale: 1.01 }}
-        className="col-span-1 rounded-2xl border bg-white p-6 shadow-sm"
+        initial={{ opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.5, delay: 0.05 }}
+        className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-white"
       >
-        <div className="flex items-center gap-2 text-gray-900">
-          <BarChart2 className="h-5 w-5 text-rose-500" />
-          <h3 className="font-semibold">By Stage</h3>
+        <div className="flex items-center gap-2 text-indigo-300">
+          <TrendingUp size={18} />
+          <span className="text-xs uppercase tracking-wider">Stages</span>
         </div>
-        <div className="mt-6 space-y-3">
-          {stages.map((s) => {
-            const total = ideas.length || 1;
-            const value = stats.byStage[s] || 0;
-            const pct = Math.round((value / total) * 100);
-            return (
-              <div key={s}>
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <span>{s}</span>
-                  <span>{value}</span>
-                </div>
-                <div className="mt-1 h-2 w-full rounded bg-gray-100">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    whileInView={{ width: `${pct}%` }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, ease: 'easeOut' }}
-                    className="h-2 rounded bg-rose-400"
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </motion.div>
-
-      {/* Domain pills */}
-      <motion.div
-        whileHover={{ scale: 1.01 }}
-        className="col-span-1 rounded-2xl border bg-white p-6 shadow-sm"
-      >
-        <div className="flex items-center gap-2 text-gray-900">
-          <PieChart className="h-5 w-5 text-rose-500" />
-          <h3 className="font-semibold">Domains</h3>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {Object.entries(stats.byDomain).map(([d, count]) => (
-            <motion.span
-              key={d}
-              whileHover={{ y: -2 }}
-              className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-gray-700 bg-white shadow-sm"
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {Object.entries(byStage).map(([stage, count]) => (
+            <button
+              key={stage}
+              onClick={() => onFilterByStage(stage)}
+              className="group rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left hover:bg-white/10 transition"
             >
-              <span className="h-2 w-2 rounded-full bg-rose-500" />
-              {d} <span className="text-gray-400">{count}</span>
-            </motion.span>
+              <div className="text-xs text-white/70">{stage}</div>
+              <div className="text-lg font-semibold text-white flex items-center gap-2">
+                {count}
+                <span className="inline-block h-1.5 flex-1 rounded-full bg-gradient-to-r from-indigo-500 to-sky-500 group-hover:from-violet-500 group-hover:to-indigo-500" />
+              </div>
+            </button>
           ))}
-          {Object.keys(stats.byDomain).length === 0 && (
-            <span className="text-sm text-gray-500">No ideas yet</span>
-          )}
         </div>
       </motion.div>
-    </section>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-white"
+      >
+        <div className="flex items-center gap-2 text-indigo-300">
+          <Calendar size={18} />
+          <span className="text-xs uppercase tracking-wider">Domains</span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {byDomain.slice(0, 8).map(([domain, count]) => (
+            <button
+              key={domain}
+              onClick={() => onFilterByDomain(domain)}
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/90 hover:bg-white/10 transition"
+            >
+              {domain} <span className="opacity-70">{count}</span>
+            </button>
+          ))}
+        </div>
+      </motion.div>
+    </div>
   );
 }
